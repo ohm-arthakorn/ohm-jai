@@ -5,12 +5,12 @@
         </header>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-1 flex mb-2">
-            <button @click="form.type = 'expense'" disabled
+            <button @click="form.type = 'expense'"
                 class="flex-1 py-2 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
                 :class="form.type === 'expense' ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:bg-slate-50'">
                 รายจ่าย
             </button>
-            <button @click="form.type = 'income'" disabled
+            <button @click="form.type = 'income'"
                 class="flex-1 py-2 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
                 :class="form.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-500 hover:bg-slate-50'">
                 รายรับ
@@ -46,10 +46,10 @@
             </div>
 
             <!-- Submit -->
-            <button type="submit" disabled
+            <button type="submit" :disabled="isSubmitting"
                 class="mt-auto w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
                 :class="form.type === 'expense' ? 'bg-red-500 hover:bg-red-600 shadow-red-200 focus:ring-red-500' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 focus:ring-emerald-500'">
-                บันทึกรายการ
+                {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกรายการ' }}
             </button>
         </form>
     </div>
@@ -61,7 +61,11 @@ import { useRouter } from 'nuxt/app'
 import { useTransactionStore } from '~/stores/useTransactionStore'
 
 const router = useRouter()
+// เรียกใช้งาน Supabase ในเว็บไซต์
+const supabase = useSupabaseClient()
 const store = useTransactionStore()
+
+const isSubmitting = ref(false)
 
 const form = ref({
     type: 'expense',
@@ -77,16 +81,50 @@ const availableCategories = computed(() => {
     return form.value.type === 'expense' ? expenseCategories : incomeCategories
 })
 
-const saveTransaction = () => {
+const saveTransaction = async () => {
     if (!form.value.amount || !form.value.category) return
 
-    store.addTransaction({
-        type: form.value.type,
-        amount: Number(form.value.amount),
-        category: form.value.category,
-        note: form.value.note
-    })
+    isSubmitting.value = true
 
-    router.push('/')
+    try {
+        // 1. บันทึกลง Supabase
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert([
+                {
+                    title: form.value.note || form.value.category, // ถ้าไม่ได้จด note ให้เอา category มาใช้แทน
+                    amount: Number(form.value.amount),
+                    type: form.value.type,
+                    category: form.value.category
+                }
+            ])
+            .select() // เพื่อให้มันรีเทิร์นข้อมูลที่เพิ่ง insert กลับมา
+
+        if (error) {
+            console.error('Error inserting data:', error)
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message)
+            return
+        }
+
+        console.log('Successfully inserted data:', data)
+
+        // 2. อัปเดต State (Pinia) ต่อ เผื่อเอาไปใช้โชว์ที่อื่นแบบไม่ต้องโหลตใหม่
+        store.addTransaction({
+            id: data[0].id, // ใช้ id จาก Supabase
+            type: form.value.type,
+            amount: Number(form.value.amount),
+            category: form.value.category,
+            note: form.value.note,
+            created_at: data[0].created_at // ใช้เวลาจาก Supabase
+        })
+
+        // กลับไปหน้าแรก
+        router.push('/')
+    } catch (err) {
+        console.error('Unexpected error:', err)
+        alert('เกิดข้อผิดพลาดที่ไม่คาดคิด!')
+    } finally {
+        isSubmitting.value = false
+    }
 }
 </script>
