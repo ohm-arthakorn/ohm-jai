@@ -46,6 +46,8 @@
             </div>
 
             <!-- Submit -->
+
+            <!-- ให้มีการ Return ค่าเป็นวันที่และเวลาที่ได้มีการส่งข้อมูลมาด้วย -->
             <button type="submit" :disabled="isSubmitting"
                 class="mt-auto w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
                 :class="form.type === 'expense' ? 'bg-red-500 hover:bg-red-600 shadow-red-200 focus:ring-red-500' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 focus:ring-emerald-500'">
@@ -75,7 +77,7 @@ const form = ref({
 })
 
 const expenseCategories = ['อาหาร', 'เดินทาง', 'ช้อปปิ้ง', 'บิล/ค่าใช้จ่าย', 'สุขภาพ', 'อื่นๆ']
-const incomeCategories = ['เงินเดือน', 'ธุรกิจ', 'โบนัส', 'อื่นๆ']
+const incomeCategories = ['ค่าขนม', 'เงินเดือน', 'ธุรกิจ', 'โบนัส', 'อื่นๆ']
 
 const availableCategories = computed(() => {
     return form.value.type === 'expense' ? expenseCategories : incomeCategories

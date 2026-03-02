@@ -17,7 +17,7 @@
             </div>
         </header>
 
-        <!-- Summary Card -->
+        <!-- ส่วนแสดงยอดคงเหลือ รายรับ รายจ่าย -->
         <section
             class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-200">
             <div class="mb-4">
