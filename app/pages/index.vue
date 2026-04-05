@@ -58,8 +58,7 @@
                 </div>
 
                 <!-- List -->
-                 <!-- TODO: ทำการหั่น Array ด้วย slice(0, 3) เพื่อดึงมาแค่ 3 รายการแรก -->
-                <div v-for="tx in transactions.slice(0, 3)" :key="tx.id" 
+                <div v-for="tx in transactions" :key="tx.id" 
                     class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full flex items-center justify-center"
