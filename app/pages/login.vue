@@ -29,7 +29,6 @@
 
 <!-- ส่วนของ Backend ทำหน้าที่จัดการเรื่องของระบบ Login -->
 <script setup lang="ts">
-
 /*
   มีการกำหนดให้ไม่ใช้งาน layout ใน nuxt
 */
@@ -62,9 +61,17 @@ const handleLogin = async () => {
     })
 
     if (data.success) {
-      // ถ้าการตรวจสอบ username และ password ถูกต้องไหม ? ประกาศตัวแปรชื่อ authCookie สำหรับการเก็บ session ในการ login
+      /*
+        สร้างตัวแปรชื่อ authCookie มีการใช้งาน function useCookie(parameter1)
+        โดยจะมีการเก็บข้อมูลของ User ที่ได้มีการล็อกอินมาเก็บเอาไว้ในตัวแปร authCookie
+        จากนั้นจะมีการกำหนดค่าของ authCookie.value ให้มีการเก็บข้อมูล data.user.id.toString()
+      */
       const authCookie = useCookie('auth_token')
-      authCookie.value = 'authenticated'
+      authCookie.value = data.user.id.toString()
+
+      // ทำเช่นเดียวกันบรรทัดด้านบน
+      const nameCookie = useCookie('auth_username')
+      nameCookie.value = data.user.username
 
       // จากนั้นจะทำการส่ง user ไปยังหน้า index.vue
       navigateTo('/')
