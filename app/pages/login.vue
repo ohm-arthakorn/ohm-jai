@@ -41,6 +41,7 @@
 */
 definePageMeta({
   layout: false
+  
 })
 
 // สร้างตัวแปรสำหรับการเก็บข้อมูล username และ password 

@@ -1,14 +1,12 @@
-// middleware/auth.global.ts
-export default defineNuxtRouteMiddleware((to) => {
-  const auth = useCookie('auth_token')
+export default defineNuxtRouteMiddleware((to, from) => {
+  const token = useCookie('auth_token')
 
-  // ถ้ายังไม่มี "ตั๋ว" (Cookie) และไม่ได้อยู่ที่หน้า Login -> ให้ดีดไปหน้า Login
-  if (!auth.value && to.path !== '/login') {
+  // 1. กำหนดรายชื่อหน้าที่ "ใครก็เข้าได้" โดยไม่ต้อง Login ค่ะโอม
+  const allowedRoutes = ['/login', '/register']
+
+  // 2. เช็คเงื่อนไข: ถ้าไม่มี Token และหน้าที่จะไปไม่อยู่ในรายการที่ยกเว้น
+  if (!token.value && !allowedRoutes.includes(to.path)) {
+    // เตะกลับไปที่หน้า login
     return navigateTo('/login')
   }
-
-  // ถ้ามี "ตั๋ว" แล้ว แต่ยังจะกลับไปหน้า Login -> ให้ส่งไปหน้าหลักพอค่ะ
-  if (auth.value && to.path === '/login') {
-    return navigateTo('/')
-  }
-}) 
+})
