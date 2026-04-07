@@ -8,7 +8,7 @@
       <h2 class="text-2xl font-bold text-center mb-8">เข้าสู่ระบบ</h2>
 
       <!-- ส่วนสำหรับการกรอก username และ password -->
-      <form action="" @submit.prevent="handleLogin">
+      <form @submit.prevent="handleLogin">
         <div class="space-y-4">
           <input v-model="username" type="text" placeholder="Username" class="w-full p-3 border rounded" />
           <input v-model="password" type="password" placeholder="Password" class="w-full p-3 border rounded" />
@@ -17,10 +17,17 @@
           <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>
 
           <!-- ปุ่มสำหรับการส่งข้อมูล username และ password -->
-          <button @click="handleLogin" :disabled="loading"
-            class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">
+          <button type="submit" :disabled="loading"
+            class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition-colors">
             {{ loading ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ' }}
           </button>
+
+          <!-- ส่วนเชื่อมต่อไปยังหน้าลงทะเบียน -->
+          <div class="text-center mt-6">
+            <span class="text-gray-600 text-sm">ยังไม่มีบัญชีผู้ใช้งานใช่ไหม? </span>
+            <NuxtLink to="/register" class="text-blue-600 hover:underline text-sm font-bold transition-all">
+              สมัครสมาชิกที่นี่</NuxtLink>
+          </div>
         </div>
       </form>
     </div>
