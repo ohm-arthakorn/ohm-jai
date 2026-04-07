@@ -1,5 +1,7 @@
 <template>
     <div class="flex flex-col gap-6">
+
+        <!-- ส่วนของ Header -->
         <header>
             <h1 class="text-2xl font-bold text-slate-800">ประวัติรายการ</h1>
         </header>
@@ -35,15 +37,29 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <p class="font-medium text-slate-800 text-sm truncate">{{ tx.category }}</p>
-                                    <p class="text-xs w-full text-slate-500 truncate" :title="tx.note">{{ tx.title ||
-                                        tx.note || 'ไม่มีหมายเหตุ' }}</p>
                                 </div>
                             </div>
-                            <div class="text-right shrink-0 ml-2">
+                            <div class="text-right shrink-0 ml-2 flex flex-col items-end gap-1">
                                 <p class="font-bold text-sm whitespace-nowrap"
                                     :class="tx.type === 'income' ? 'text-emerald-600' : 'text-slate-800'">
                                     {{ tx.type === 'income' ? '+' : '-' }}฿{{ Number(tx.amount).toLocaleString() }}
                                 </p>
+                                <!-- ปุ่มสำหรับแก้ไขและลบ (CRUD) -->
+                                <div class="flex gap-2 mt-1">
+                                    <!-- 
+                                        การใช้งาน NuxtLink จะมีความใกล้เคียงกับ <a href="..."> 
+                                        แต่ว่า NuxtLink จะไม่ต้องมีการ Refresh หน้าเว็บ เรียกว่า การทำ Client-Side Rendering        
+                                        มีการเขียนให้สามารถส่ง id ของรายการผ่าน URL หรือที่เรียกว่า Path Parameter API สำหรับการ Route ข้อมูลง่าย ๆ ด้วย
+                                    -->
+                                    <NuxtLink :to="`/edit/${tx.id}`" class="text-slate-400 hover:text-blue-500 transition-colors" title="แก้ไขรายการ">
+                                        <EditIcon class="w-4 h-4" />
+                                    </NuxtLink>
+                                    
+                                    <!-- ปุ่มสำหรับการลบข้อมูล มีการใช้งาน function delateTransaction(id) -->
+                                    <button @click="deleteTransaction(tx.id)" class="text-slate-400 hover:text-red-500 transition-colors" title="ลบรายการ">
+                                        <DeleteIcon class="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -54,52 +70,69 @@
 </template>
 
 <script setup>
+import { ArrowDownRight, ArrowUpRight, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { ArrowDownRight, ArrowUpRight } from 'lucide-vue-next'
 
-
+// สร้างตัวแปรสำหรับการเก็บ Icon สำหรับใช้งานในรูปแบบ Component
 const ArrowDownRightIcon = ArrowDownRight
 const ArrowUpRightIcon = ArrowUpRight
+const EditIcon = Pencil
+const DeleteIcon = Trash2
 
-// ดึงข้อมูลจาก Supabase
-const supabase = useSupabaseClient()
+// ฟังก์ชันสำหรับส่งคำสั่งลบข้อมูลไปยังหลังบ้าน (API)
+const deleteTransaction = async (id) => {
+    // แสดงหน้าต่างยืนยันการลบเพื่อป้องกันการกดผิด
+    const confirmDelete = confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')
+    if (!confirmDelete) return
+    try {
+        // ยิง API แบบ DELETE ไปพร้อมกับแนบรหัสรายการไว้ที่ URL (เช่น /api/transaction/5)
+        await $fetch(`/api/transaction/${id}`, {
+            method: 'DELETE'
+        })
+        alert('ลบข้อมูลสำเร็จ!')
+        refresh() // โหลดข้อมูลรายการใหม่มาแสดงโดยอัตโนมัติ หลังบ้านลบเสร็จเราก็รีเฟรชหน้าบ้าน
+    } catch (err) {
+        alert('เกิดข้อผิดพลาดในการลบข้อมูล')
+    }
+}
 
-// กำหนด Key เป็น history-transactions เพื่อไม่ให้ไปชนกับหน้า Test 
-const { data: transactions, pending, error } = await useAsyncData('history-transactions', async () => {
-    const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data
+// สร้าง function สำหรับการรับข้อมูลโดย API transaction.get.ts มายังตัวแปรนี้ 
+// ดึงตัวแปร refresh() มาใช้ด้วย เพื่อเอาไว้สั่งให้โหลดข้อมูลอีกรอบตอนลบรายการเสร็จ
+const { data: transactions, pending, error, refresh } = await useAsyncData('history-all-transactions', async () => {
+    /*
+        $fetch คือ function สำหรับการเรียก API จาก API เส้นที่มีการเขียนเอง หรือมาจากเว็บไซต์อื่น ๆ
+    */
+    const response = await $fetch('/api/transaction')   // มีการดึง API จาก API '/api/transaction' แล้วมีการรอข้อมูลด้วยการใช้งาน await
+    return response || []   // มีการ return ข้อมูลที่ได้รับจาก API แล้วถ้าในกรณีที่มีการ return null จะมีการคืน []
 })
 
-// ฟังก์ชันสำหรับจัดกลุ่มข้อมูลที่ดึงมาจาก Supabase ให้เรียงตามวันที่ (เหมือนที่ Pinia เคยทำให้)
+// สร้าง function สำหรับการส่งข้อมูลที่ได้จากการรับ API มาแทนค่าเพื่อแสดงผ่านเว็บไซต์
 const groupedTransactions = computed(() => {
+    /*
+        computed() คือ การห่อ logic ของข้อมูลเอาไว้ แล้วค่อย return ค่าออกไป
+    */
     if (!transactions.value) return {}
 
-    const groups = {}
+    // ถ้ามีข้อมูลเรามีการเอาข้อมูลมาเก็บเอาไว้ในตัวแปร acc ย่อมาจากคำว่า Accumulator (ตัวสะสม)
+    return transactions.value.reduce((acc, tx) => {
 
-    transactions.value.forEach(tx => {
-        // ดึงวันที่จากฟิลด์ created_at มาทำเป็น Date object
-        const dateObj = new Date(tx.created_at)
-
-        // จัด Format ของวันที่ให้เป็น Th อย่างสวยงาม
-        const dateString = new Intl.DateTimeFormat('th-TH', {
-            day: 'numeric',
+        // สร้างตัวแปรสำหรับการเก็บวันที่ (Date) ที่มีการจัด format แล้วเรียบร้อย
+        const dateStr = new Date(tx.date).toLocaleDateString('th-TH', {
+            year: 'numeric',
             month: 'short',
-            year: 'numeric' // ใช้วิธีแสดงปีด้วย เผื่อข้อมูลมีหลายปี
-        }).format(dateObj)
-
-        // ถ้าคีย์วันที่นั้นยังไม่มีการสร้างกลุ่ม ให้สร้างขึ้นมาใหม่ (เหมือนสร้าง Array เปล่ารอรับข้อมูล)
-        if (!groups[dateString]) {
-            groups[dateString] = []
+            day: 'numeric'
+        })
+        /*
+            ถ้าในตัวแปร acc ยังไม่มี key วันที่ dateStr ให้สร้าง key วันที่ dateStr ขึ้นมาแล้วกำหนดให้มีค่าเป็น Array ว่าง
+        */
+        if (!acc[dateStr]) {
+            acc[dateStr] = []
         }
-
-        groups[dateString].push(tx)
-    })
-
-    return groups
+        /*
+            ถ้ามีอยู่แล้วก็ให้เอาค่าไม่ว่าจะเป็น income หรือ expense มาใส่ในตัวแปร acc ที่เป็นวันที่ dateStr     ที่เก็บเป็น array    
+        */
+        acc[dateStr].push(tx)
+        return acc
+    }, {})
 })
 </script>
